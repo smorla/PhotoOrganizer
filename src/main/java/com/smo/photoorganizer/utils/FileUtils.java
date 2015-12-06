@@ -33,4 +33,28 @@ public class FileUtils {
         }        
         return result;
     }    
+    
+    /**
+     * If toPath exists then the method returns a new Path with a suffix counter
+     * added to a file.
+     * @param toPath
+     * @return 
+     */
+    public static String getNewPath(String toPath) {
+        if (!new File(toPath).exists()){
+            return toPath;
+        }
+        int counter = 1;
+        int lastPointPos = toPath.lastIndexOf(".");
+        String prePath = new StringBuilder().append(toPath.substring(0,lastPointPos)).append("_").toString();
+        String postPath = new StringBuilder().append(toPath.substring(lastPointPos, toPath.length())).toString();
+        while (new File(prePath+counter+postPath).exists()){
+            counter++;
+        }
+        return prePath+counter+postPath;
+    }
+    
+    public static void main(String args[]){
+        System.out.println(FileUtils.getNewPath("C:\\Temp\\direc1\\file.rtf"));
+    }
 }

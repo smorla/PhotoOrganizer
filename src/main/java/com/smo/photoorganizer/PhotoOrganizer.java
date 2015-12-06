@@ -16,6 +16,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,6 +40,8 @@ public class PhotoOrganizer {
     private static final String PROCESS    = "P";
     private static final String COPY       = "C";
     private static final String MOVE       = "M";
+    private static final String YEARMONTHDAY = "1";
+    private static final String YEARMONTH = "2";
     
     private String rootDirectory   = null;
     private String targetDirectory = null;
@@ -47,6 +50,7 @@ public class PhotoOrganizer {
     private List<String> filesProcessedWithError = null;
     private boolean simulation = false;
     private boolean moveFiles = false;
+    private String directoryFormat;
 
 
     /**
@@ -80,6 +84,11 @@ public class PhotoOrganizer {
         
         String option = getInput("Simulate or process? (S | p)").toUpperCase().equals(PROCESS) ? PROCESS : SIMULATION;
         po.checkOption(option);
+        
+        String directoryFormat = getInput("Select directory format. Year/Month/Day or Year/Month? (1 | 2)").toUpperCase().equals(YEARMONTHDAY) ? YEARMONTHDAY : YEARMONTH;
+        po.checkDirectoryFormat(directoryFormat);
+        po.setDirectoryFormat(directoryFormat);
+        
         if (SIMULATION.equals(option)) {
             po.setSimulation(true);
         }
@@ -123,14 +132,19 @@ public class PhotoOrganizer {
         s.append(this.getTargetDirectory())
          .append(File.separator)
          .append(c.get(Calendar.YEAR))
-         .append(File.separator)
-         .append(String.valueOf(c.get(Calendar.YEAR)).substring(2))
-         .append(String.format("%02d", Integer.parseInt(String.valueOf(c.get(Calendar.MONTH)+1))))
-         .append(File.separator)
-         .append(filename);
-         ;
+         .append(File.separator);
+        if (this.directoryFormat.equals(YEARMONTHDAY)){
+         s.append(String.format("%02d", Integer.parseInt(String.valueOf(c.get(Calendar.MONTH)+1))))
+          .append(File.separator)
+          .append(String.format("%02d", Integer.parseInt(String.valueOf(c.get(Calendar.DAY_OF_MONTH)))));
+        }else{
+            s.append(String.valueOf(c.get(Calendar.YEAR)).substring(2))
+             .append(String.format("%02d", Integer.parseInt(String.valueOf(c.get(Calendar.MONTH)+1))));
+        } 
+         s.append(File.separator)       
+          .append(filename);
          
-         return s.toString();         
+         return FileUtils.getNewPath(s.toString());         
     }
     
     
@@ -257,6 +271,14 @@ public class PhotoOrganizer {
         }
     }
     
+    private void checkDirectoryFormat(String o) throws Exception {
+        
+        if (YEARMONTHDAY.equals(o) || YEARMONTH.equals(o)){
+        } else {
+            throw new WrongArgumentException("Directory format not valid: '1' year/month/day | '2' year/month");
+        }
+    }
+    
     
     /**
      * Prints metadata information.
@@ -350,6 +372,10 @@ public class PhotoOrganizer {
 
     public void setMoveFiles(boolean moveFiles) {
         this.moveFiles = moveFiles;
+    }
+
+    private void setDirectoryFormat(String directoryFormat) {
+       this.directoryFormat = directoryFormat;
     }
 }
 
