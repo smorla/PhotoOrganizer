@@ -27,12 +27,17 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Salvador Morla (smorla@gmail.com)
  */
 public class PhotoOrganizer {
   
+    private static final Logger logger = LoggerFactory.getLogger(PhotoOrganizer.class);
+    private static final Logger loggerError = LoggerFactory.getLogger("com.smo.photoorganizer.errorfiles");
+    
     // Date/Time Original(0x9003 : 36867)
     private static final int DATE_TIME_ORIGINAL = 36867;
     private static final int DATE_TIME_MODIFIED = 3;
@@ -51,7 +56,7 @@ public class PhotoOrganizer {
     private boolean simulation = false;
     private boolean moveFiles = false;
     private String directoryFormat;
-
+       
 
     /**
      * Main entry point for application
@@ -65,8 +70,8 @@ public class PhotoOrganizer {
 
       try {
         
-        System.out.println("Photo catalog organizer");
-        System.out.println("-----------------------");
+        logger.debug("Photo catalog organizer");
+        logger.debug("-----------------------");
         
         // Check and process input parameters
         
@@ -94,23 +99,22 @@ public class PhotoOrganizer {
         }
                 
         // Run the process!
-        System.out.println("Process executing...");
+        logger.debug("Process executing...");
         po.doProcessing();
       }
       catch (Exception e) {
-          System.out.println("ERROR:" + e.getMessage());          
+          logger.debug("ERROR:" + e.getMessage());          
       }
       finally {
-          System.out.println("------------------------------------------------------------------------");
-          System.out.println("The process has finished.");
-          System.out.println("Origin: " + po.getRootDirectory());
-          System.out.println("Target: " + po.getTargetDirectory());
-          System.out.println("File operation option: " + (po.isMoveFiles() ? "move" : "copy"));
-          System.out.println("Total read files: " + po.getTotalReadFiles());
-          System.out.println("Total files processed: " + po.getFilesProcessed());
-          System.out.println("Files processed with error (" + po.getFilesProcessedWithError().size() + "):");
-          po.getFilesProcessedWithError().stream()
-                  .forEach(System.out::println);
+          logger.debug("------------------------------------------------------------------------");
+          logger.debug("The process has finished.");
+          logger.debug("Origin: " + po.getRootDirectory());
+          logger.debug("Target: " + po.getTargetDirectory());
+          logger.debug("File operation option: " + (po.isMoveFiles() ? "move" : "copy"));
+          logger.debug("Total read files: " + po.getTotalReadFiles());
+          logger.debug("Total files processed: " + po.getFilesProcessed());
+          logger.debug("Files processed with error (" + po.getFilesProcessedWithError().size() + "):");
+          po.getFilesProcessedWithError().stream().forEach(loggerError::error); 
       }      
     }
     
@@ -179,11 +183,11 @@ public class PhotoOrganizer {
      */
     private void doProcessing() throws IOException {
         
-        System.out.println("Retrieving file set...");
+        logger.debug("Retrieving file set...");
         List<String> files = FileUtils.getFiles(getRootDirectory());
-        System.out.println("Done. " + files.size() + " found.");
+        logger.debug("Done. " + files.size() + " found.");
         
-        System.out.println("Classification process start ...");
+        logger.debug("Classification process start ...");
         for (String filename: files) {
             
             try {
@@ -193,7 +197,7 @@ public class PhotoOrganizer {
                 Date d = this.getOriginalDateTime(metadata);
                 
                 // DEBUG - uncoment the next 2 lines to print debug info of each processed file.
-                // System.out.println("File-> "+filename + " --->  Date when pic was taken: " + d);
+                // logger.debug("File-> "+filename + " --->  Date when pic was taken: " + d);
                 // print(metadata);
                 // END DEBUG
 
@@ -202,7 +206,7 @@ public class PhotoOrganizer {
                 }
                 String toPath = this.getTargetPath(d, f.getName());
                 if (isSimulation()) {
-                    System.out.println(filename+" -(simulation)-> "+toPath);
+                    logger.debug(filename+" -(simulation)-> "+toPath);
                 }
                 else {
                     Path from = Paths.get(f.getAbsolutePath());
@@ -224,13 +228,13 @@ public class PhotoOrganizer {
                         };
                         Files.copy(from, to, options);
                     }
-                    System.out.println(filename+" -(" + (isMoveFiles() ? "moved" : "copied") + " to)-> " + toPath);
+                    logger.debug(filename+" -(" + (isMoveFiles() ? "moved" : "copied") + " to)-> " + toPath);
                 }
                 setFilesProcessed();
             } catch (Exception e) {
                 // handle exception
                 getFilesProcessedWithError().add(filename);
-                System.out.println("ERROR processing file " + filename + ": " + e.getMessage());
+                logger.debug("ERROR processing file " + filename + ": " + e.getMessage());
             }
         }        
         setTotalReadFiles(files.size());
@@ -290,15 +294,15 @@ public class PhotoOrganizer {
         // A Metadata object contains multiple Directory objects
         for (Directory directory : metadata.getDirectories()) {            
             // Each Directory stores values in Tag objects
-            System.out.println("DIRECTORY:" + directory.getName());
+            logger.debug("DIRECTORY:" + directory.getName());
             directory.getTags().stream().forEach((tag) -> {                
-                System.out.println(tag.getTagName() + "(" + tag.getTagTypeHex() + " : " + tag.getTagType() + ") - " + tag.getDescription());
+                logger.debug(tag.getTagName() + "(" + tag.getTagTypeHex() + " : " + tag.getTagType() + ") - " + tag.getDescription());
             });
 
             // Each Directory may also contain error messages
             if (directory.hasErrors()) {
                 for (String error : directory.getErrors()) {
-                    System.err.println("ERROR: " + error);
+                    logger.error("ERROR: " + error);
                 }
             }
         }
